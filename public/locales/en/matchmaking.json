@@ -1,0 +1,11 @@
+{
+    "No data": "This user has never played matchmaking, super sorry alexander",
+    "3v3 section title": "3v3",
+    "Royal section title": "Royal",
+    "Rank": "Rank: {{rank}} (top {{top}}%)",
+    "Total players": "Total Players: {{totalplayers}}",
+    "MMR": "MMR: {{points}} points",
+    "Wins": "Wins: {{wins}}",
+    "Next rank MM": "Next rank: {{rank}} in {{points}} points",
+    "Next rank Royal": "Next rank: {{rank}} in {{points}} wins"
+}

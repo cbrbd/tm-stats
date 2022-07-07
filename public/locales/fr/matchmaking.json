@@ -1,0 +1,11 @@
+{
+    "No data": "Ce joueur n'a jamais joué en matchmaking, vraiment désolé alexandre",
+    "3v3 section title": "3v3",
+    "Royal section title": "Royal",
+    "Rank": "Rang: {{rank}} (top {{top}}%)",
+    "Total players": "Joueur totaux: {{totalplayers}}",
+    "MMR": "MMR: {{points}} points",
+    "Wins": "Victoires: {{wins}}",
+    "Next rank MM": "Prochain rang: {{rank}} dans {{points}} points",
+    "Next rank Royal": "Prochain rang: {{rank}} dans {{points}} victoires"
+}

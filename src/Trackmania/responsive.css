@@ -1,0 +1,72 @@
+@media screen and (max-width: 1024px){
+
+    #mm-stats{
+        padding-top: 1rem;
+        flex-direction: column;
+        padding: 1%;
+    }
+
+    .mm-rank{
+        width: 100%;
+        padding-bottom: 1rem;
+    }
+
+    .content-body{
+        padding-left: 0rem;
+        padding-right: 0rem;
+    }
+
+
+    .mm-detail{
+        text-align: center;
+        width: 100%;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        padding-left:0rem;
+        padding-right: 0rem;
+    }
+
+    .mm-detail div{
+        padding-bottom: 1rem;
+    }
+
+    .big{
+        font-size: 3rem;
+    }
+
+    tr{
+        height: 4rem;
+    }
+
+    .cells{
+        width: 100%;
+        margin: 1%;
+    }
+
+    .reload-button{
+        color: #000;
+    }
+
+    .menuList{
+        display: flex;
+        flex-direction: column;
+    }
+
+    .trophy-distribution{
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+    }
+
+    .content{
+        margin: 0;
+    }
+
+    .trophy-distribution-img{
+        width: 2rem;
+    }
+
+    .echelon-type{
+        display: none;
+    }
+}
