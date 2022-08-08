@@ -11,7 +11,6 @@ import { Matchmaking } from './Trackmania/Matchmaking/Matchmaking';
 import { Error404 } from './Component/UpdateButton/404';
 import { GlobalStyle } from './StyledComponents/GlobalStyle';
 import { ThemeSwitch } from './StyledComponents/Input/ThemeSwitch';
-import { Test } from './Test/Test';
 
 //variable
 import { lightTheme, darkTheme } from './theme';
@@ -121,7 +120,6 @@ function App() {
             </Route>
             
           </Route>
-          <Route path="test" element={<Test/>}/>
           
         </Routes>
         
