@@ -10,6 +10,8 @@ export const StyledButton = styled.button`
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     font-size: inherit;
+    height: 100%;
+    box-sizing: border-box;
 
     &:focus{
         outline: #5d9dd5 solid 1px;
