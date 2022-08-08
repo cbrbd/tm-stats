@@ -1,61 +1,28 @@
 //external
-import React, { useEffect, useState, useRef } from "react"
-import { useParams} from "react-router-dom";
+import React, { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next";
 
 //components
 import { LoadingIcon } from "../../Component/UpdateButton/LoadingIcon";
 import { COTDLineChart } from "./COTDLineChart";
-import { UpdateButton } from "../../Component/UpdateButton/UpdateButton";
 import { ErrorMessage } from "../../StyledComponents/General/Error";
 import { ContentBody } from "../../StyledComponents/Page/ContentBody";
 import {PlayerName} from "../../StyledComponents/General/PlayerName";
 import {CellData, Cells, CellTitle, InfoBox } from "./StyledCOTD";
 
 //variables
-import { remoteServer } from "../../config";
+import { useContext } from "react";
+import { PlayerContext } from "../Trackmania";
 
-export function COTDStats(props){
-    const [data, setData] = useState(null);
-    const [displayname, setDisplayname] = useState('');
-    const [accountid, setAccountid] = useState('');
+export function COTDStats(){
+    
     const [chartData, setChartData] = useState(null);
-    const [loading, setLoad] = useState(true);
-    const [showUpdate, setShowUpdate] = useState(false);
+    const data = useContext(PlayerContext).cotdData;
+    const generalData = useContext(PlayerContext).generalData;
+    const loading = useContext(PlayerContext).loading.cotd;
 
-    const prevPlayer = useRef();
-    const playerNameParam = useParams().player;
 
     const {t} = useTranslation("cotd");
-
-    function forceUpdate(){
-        setLoad(true);
-        setData(null);
-        setChartData(null);
-        const url  = (`${remoteServer}/COTDStats?accountID=${accountid}`).toLowerCase();
-        // if(localStorage.getItem(url) !== null){
-        //     localStorage.removeItem(url); // remove the current url from localStorage if it is more than 24 hours old (24*60*60*1000 ms)
-        // }
-            let isSubscribed = true;
-            fetch(url + '&forceupdate=true')  
-            .then(function(result){
-                if(isSubscribed){
-                    return(result.json());
-                }
-            })
-            .then((result) => {
-                if(isSubscribed){
-                    setData(result);
-                    buildChartData(result.cotds);            
-                    setLoad(false);        
-                    // localStorage.setItem(url, JSON.stringify({timestamp: new Date(), data: result}));
-                }
-            })
-            .catch(function(error){
-                console.log(error);
-            });    
-            return () => isSubscribed = false;
-        }
 
     function buildChartData(rawData){
         let lineChartData = [];
@@ -91,85 +58,20 @@ export function COTDStats(props){
         return
     }
 
-    async function findPlayerID(player){
-        const url  = (`${remoteServer}/findTrokmoniPlayer?player=${player}`).toLowerCase();
-        let result = await fetch(url);
-        result = await result.json();
-        setDisplayname(result.displayname);
-        setAccountid(result.accountid);
-        return result.accountid;
-        // if(localStorage.getItem(url) !== null){
-        //     let cached = JSON.parse(localStorage.getItem(url));
-        //     setDisplayname(cached.data.displayname);
-        //     setAccountid(cached.data.accountid);
-        //     return cached.data.accountid;
-
-        // } else {
-            // fetch(url)
-            // .then(function(result){
-            //     return result.json();
-            // })
-            // .then(function(result){
-            //     setDisplayname(result.displayname);
-            //     setAccountid(result.accountid);
-            //     // localStorage.setItem(url, JSON.stringify({timestamp: new Date(), data: result}));
-
-            //     return result.accountid;
-            // })
-        
-        // }
-    }
-
-
-    useEffect(() => {
-        let isSubscribed = true;
-        async function processData(){
-            const id = await findPlayerID(playerNameParam);
-            if(prevPlayer.current !== playerNameParam){
-                setLoad(true);
-                setData(null);
-                setChartData(null);
-    
-                const url  = (`${remoteServer}/COTDStats?accountID=${id}`).toLowerCase();
-                try {
-                    let result = await fetch(url);
-                    result = await result.json();
-                    if(isSubscribed){
-                        if(!result){
-                            setData(null);
-                            setLoad(false);
-                            return;
-                        }
-                        setData(result);
-                        buildChartData(result.cotds);            
-                        setLoad(false);        
-                        // localStorage.setItem(url, JSON.stringify({timestamp: new Date(), data: result}));
-                     }
-                    
-                } catch (error) {
-                    setData({message: 'An error occured, server might be offline'}); //set message in case catch is called
-                    setLoad(false);
-                    console.log(error);
-                    
-                }   
-    
-                
-                prevPlayer.current = playerNameParam;
-            }
+    useEffect(()=>{
+        if(data && data.cotds){
+            buildChartData(data.cotds)
         }
-        processData();
-    
-        return () => isSubscribed = false;
-    }, [playerNameParam]);
-    
+    }, [data])
 
+    
     return(
         <ContentBody>
             <div>
-                {loading && !data && (
+                {loading && (
                     <LoadingIcon/>
                 )}
-                {!data && !loading && (
+                {!data &&!loading && (
                     <ErrorMessage>{t("No data")}</ErrorMessage>
                 )}
                 {data && data.message && (
@@ -179,11 +81,8 @@ export function COTDStats(props){
             {data && !data.message && (
                 <React.Fragment>
                     <PlayerName
-                        onMouseEnter={()=>setShowUpdate(true)} 
-                        onMouseLeave={()=>setShowUpdate(false)}
                     >
-                        {displayname} 
-                        <UpdateButton show={showUpdate} onClick={forceUpdate}/>
+                        {generalData && generalData.displayname}
                     </PlayerName>
                     <InfoBox>
                         {data !== null && (

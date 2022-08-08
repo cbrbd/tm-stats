@@ -11,7 +11,6 @@ import { MenuList } from "./MenuList";
 import { PlayerList } from "./GeneralStats/PlayerList";
 import { StyledTextInput } from "../StyledComponents/Input/StyledTextInput";
 import { StyledButton } from "../StyledComponents/Input/StyledButton";
-import { LoadingIcon } from "../Component/UpdateButton/LoadingIcon";
 import { ContentHeader } from "../StyledComponents/Page/ContentHeader";
 import { ContentBody } from "../StyledComponents/Page/ContentBody";
 import { Content } from "../StyledComponents/Page/Content";
@@ -22,6 +21,7 @@ import { remoteServer } from "../config";
 
 //functions
 import useWindowDimensions from "../WindowDimensions";
+import { createContext } from "react";
 
 
 const StyledForm = styled.form`
@@ -36,21 +36,21 @@ const StyledForm = styled.form`
     transition-property: height, margin-top;
     transition-duration: 0.6s;
 `
-
+export const PlayerContext = createContext();
 
 export function Trackmania(props){
 
     let [textInput, setTextInput] = useState("");
     let [player, setPlayer] = useState("");
     let [data, setData] = useState(null);
-    let [loading, setLoading] = useState(false);
+    const [COTD, setCOTD]= useState(null);
+    let [isGeneralLoading, setIsGeneralLoading] = useState(false);
+    const [isCotdLoading, setIsCotdLoading] = useState(false);
     let [playerList, setPlayerList] = useState(null);
     let [menu, setMenu] = useState('General');
     let ParamPlayer = useParams().player;
 
     let location = useLocation().pathname;
-    let [prevLoc, setPrevLoc] = useState('/')
-
     const navigate = useNavigate();
 
     function selectMenu(newMenu){
@@ -60,109 +60,90 @@ export function Trackmania(props){
     // eslint-disable-next-line no-unused-vars
     const {t, i18n} = useTranslation('trackmania');
 
-    useEffect(()=> {
-        if(location !== prevLoc){
-            if(location !== '/' || player || ParamPlayer){
-                props.changeTitle('small');
-            } else {
-                props.changeTitle('big')
-            }
-            setPrevLoc(location);
-        } 
-    }, [ParamPlayer, player, location, prevLoc, props])
 
-    //function called on click of a player in player list
-    function playerSelect(player){
-        findTrokmoniPlayer(player);
-        setPlayer(player);
-        setTextInput(player);
-    }
-
-
-    //state change on input
-    function updateTextInput(e){
-        setTextInput(e.target.value);
-    }
-
-    //function called to update the general info and ignore the 12 hours cache life
-    
-
-
-    //function that finds a player by its name by fetching or checking localstorage
-    //only takes player name as argumnt
-    //is called by handleSubmit and playerSelect
-    function findTrokmoniPlayer(player){
-        const url  = (`${remoteServer}/findTrokmoniPlayer?player=${player}`).toLowerCase();
-        
-        //location used to keep trace of where user is (general, cotd, matchmaking) default is general
+    function navigateToPlayer(player){
         let loc = 'General';
         if(location.includes('/player')){
             let splitted = location.split('/'); //parse url and take last argument to navigate there later
             loc = splitted[splitted.length -1]
         }
-
-        //when called, go back to '/', and set state accordingly
-        navigate('/');
-        setLoading(true); 
-        setData(null);
-        setPlayerList(null);
-
-        //First, check the local storage for the requested url
-        // if(localStorage.getItem(url) !== null){ //
-        //     let cached = JSON.parse(localStorage.getItem(url));
-        //     let timestamp = new Date(cached.timestamp).getTime();
-        //     let now = new Date().getTime();
-        //     if(timestamp + 12*60*60*1000 < now){
-        //         localStorage.removeItem(url); //ditch the stored value if it is more than 12 hours old
-        //     } else {                          //Otherwise, if the player is found and data is less than 12 hours old, set data in the state
-        //         setData(cached.data);
-        //         navigate(`player/${cached.data.displayname}/${loc}`);
-        //         setLoading(false);
-        //         return;
-        //     }
-
-        //     //If nothing is found in the localstorage for the requested player, send a fetch request to the backend server
-        // }
-        fetch(url)
-        .then(function(result){
-            return result.json();
-        })
-        .then(function(result){
-            if(result.length){ //If the length of result is defined, we're in the case of a list of player
-                navigate('/');
-                setPlayerList(result);
-                setLoading(false);
-                return; //exit the function
-            }
-            //otherwise, set the data state with fetched data. It can be player details or a message
-            setData(result);
-            setLoading(false);
-            navigate(`player/${result.displayname}/${loc}`);
-            if(!result.displayname){
-                navigate('/');
-            }
-            // localStorage.setItem(url, JSON.stringify({timestamp: new Date(), data: result})); //set the result to the locaslstorage
-        })
-        .catch(function(error){
-            setData({message: 'An error occured, server might be offline'}); //set message in case catch is called
-            setLoading(false);
-            navigate('/');
-            console.log(error);
-        })
-    
-
-    
+        navigate(`/player/${player}/${loc}`)
     }
 
+    
+    useEffect(()=>{
+    
+        let isSubscribed = true; //used for cleanup
+
+        if(!ParamPlayer || ParamPlayer === "undefined"){
+            return;
+        }
+
+        async function fetchPlayerData(){
+            let url  = (`${remoteServer}/findTrokmoniPlayer?player=${ParamPlayer}`).toLowerCase();
+
+            //reset the state before fetching data from the server
+            setIsGeneralLoading(true);
+            setIsCotdLoading(true); 
+            setData(null);
+            setCOTD(null);
+            setPlayerList(null);
+
+            try{
+                let result = null;
+                if(isSubscribed){
+                    //fetch general stats
+                    result = await fetch(url);
+                    result = await result.json();
+                }
+
+                //if result.lenght is defined, result is a player list
+                if(isSubscribed && result && result.length){ 
+                    setPlayerList(result);
+                    setIsCotdLoading(false);
+                    setIsGeneralLoading(false);
+                    navigate('/'); //if result is a playerlist, reset navigation to root
+                    return;
+
+
+                } else if(isSubscribed){
+                    setData(result);
+                    setIsGeneralLoading(false);
+                }
+                
+                if(isSubscribed){
+                    url  = (`${remoteServer}/COTDStats?accountID=${result.accountid}`).toLowerCase();
+                    result = await fetch(url);
+                    result = await result.json()
+                    setCOTD(result);
+                    setIsCotdLoading(false);
+                }
+            
+            } catch(error){
+                setData({message: 'An error occured, server might be offline'}); //set message in case catch is called
+                setIsCotdLoading(false);
+                setIsGeneralLoading(false);
+            }
+        
+        }
+    
+        fetchPlayerData(isSubscribed);
+
+        //cleanup function
+        return () =>isSubscribed = false;
+
+    }, [ParamPlayer, location, navigate])
+
+
+
     //function called on button click.
-    //set the player to current textInput, and call the findTrokmoniPlayer function
     function handleSubmit(e){
         e.preventDefault();
         props.changeTitle('small');
-        setLoading(true);
         setPlayer(textInput);
-        findTrokmoniPlayer(textInput);
+        navigateToPlayer(textInput);
     }
+
 
 
     const {width} = useWindowDimensions();
@@ -174,7 +155,10 @@ export function Trackmania(props){
     const menus = ['General', 'COTD', 'Matchmaking'];
 
     return(
-        <div>
+        <PlayerContext.Provider style={{display:"block", border: "1px solid lime"}} value={{generalData: data, cotdData: COTD, loading: {general: isGeneralLoading, cotd: isCotdLoading}}}>
+            <div>
+
+            
             <StyledForm player = {player||ParamPlayer}
                 className={player || ParamPlayer ? "input-group-small" : "input-group-big"}
             >
@@ -182,7 +166,7 @@ export function Trackmania(props){
                     type="text" 
                     placeholder={t('Search player')} 
                     value={textInput} 
-                    onChange={updateTextInput}
+                    onChange={(e)=>{setTextInput(e.target.value)}}
                 />
                 <StyledButton
                     type="submit" onClick={handleSubmit} 
@@ -195,25 +179,21 @@ export function Trackmania(props){
             
             <Content>
                 <ContentHeader>
-                    {ParamPlayer && !(data && data.message) && (
+                    {ParamPlayer && (data) && (
                         <MenuList playername={(data && data.displayname) || ParamPlayer} menus={menus} handleClick={selectMenu} selected={menu}/>
                     )}
                 </ContentHeader>
-                     
                 
-                {(loading || playerList || (data && data.message)) && (
+                
+                {(playerList || (data && data.message)) && (
                     <ContentBody>
 
                     {playerList && (
                         <div>
                             <div>{t('No exact match')} <strong>{player}</strong> {t('one of the following')}</div>
                             {/* <div>No exact match for player <strong>{player}</strong>, is it one of the following ?</div> */}
-                            <PlayerList data={playerList} onClick={playerSelect}/>
+                            <PlayerList data={playerList} onClick={navigateToPlayer}/>
                         </div>
-                    )}
-
-                    {loading && (
-                        <LoadingIcon/>
                     )}
             
                     {data && data.message &&(
@@ -228,6 +208,7 @@ export function Trackmania(props){
                 <Outlet/>
             </Content>
                 
-        </div> 
+            </div>
+        </PlayerContext.Provider> 
     )
 }
