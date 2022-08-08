@@ -1,4 +1,7 @@
 export function formatRank(rank){
+    if(rank === undefined){
+        return;
+    }
     if(rank === 1){
         return 'first'
     }
